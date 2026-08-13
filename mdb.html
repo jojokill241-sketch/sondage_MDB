@@ -24,6 +24,95 @@
       min-height: 100vh;
     }
 
+    /* Modal de Mot de Passe pour Accès MDB Admin */
+    .auth-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(18, 18, 18, 0.98);
+      backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .auth-card {
+      background: var(--admin-card-bg);
+      border: 1px solid var(--admin-border);
+      padding: 28px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    }
+
+    .auth-card h2 {
+      margin-top: 0;
+      margin-bottom: 8px;
+      font-size: 1.25rem;
+      color: #fff;
+    }
+
+    .auth-card p {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 20px;
+    }
+
+    .auth-card input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--admin-border);
+      background: var(--admin-bg);
+      color: #fff;
+      font-size: 1.1rem;
+      text-align: center;
+      letter-spacing: 4px;
+      outline: none;
+      margin-bottom: 12px;
+    }
+
+    .auth-card input[type="password"]:focus {
+      border-color: var(--admin-accent);
+    }
+
+    .auth-error {
+      color: #e53935;
+      font-size: 0.8rem;
+      margin-bottom: 12px;
+      display: none;
+    }
+
+    .btn-auth {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background-color: var(--admin-accent);
+      color: #fff;
+      font-weight: bold;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-auth:hover {
+      background-color: #b71c1c;
+    }
+
+    /* Enveloppe protégée du contenu */
+    .protected-container {
+      display: none;
+      width: 100%;
+      min-height: 100vh;
+    }
+
+    .protected-container.unlocked {
+      display: flex;
+    }
+
     /* Sidebar à gauche */
     .admin-sidebar {
       width: var(--admin-sidebar-width);
@@ -200,79 +289,120 @@
 </head>
 <body>
 
-  <!-- Barre latérale / Dashboard à gauche -->
-  <aside class="admin-sidebar">
-    <div>
-      <a href="index.html" class="sidebar-brand">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="#d32f2f">
-          <circle cx="12" cy="12" r="10" stroke="#d32f2f" stroke-width="2" fill="none"/>
-          <path d="M12 2a10 10 0 0 0-10 10h10V2z" fill="#d32f2f"/>
-        </svg>
-        <span>MDB ADMIN</span>
-      </a>
-
-      <ul class="sidebar-menu">
-        <li><a href="#" class="active">📊 Dashboard</a></li>
-        <!-- Bouton pour accéder aux suggestions de thèmes -->
-        <li><a href="chat.html">💬 Propositions de thèmes</a></li>
-        <li><a href="index.html" target="_blank">🌐 Voir le site public ↗</a></li>
-      </ul>
+  <!-- Modal de Protection par Mot de Passe (Code : 1357) -->
+  <div id="auth-overlay" class="auth-overlay">
+    <div class="auth-card">
+      <h2>Accès Sécurisé</h2>
+      <p>Veuillez entrer le code d'accès MDB.PROD :</p>
+      <input type="password" id="access-pass" placeholder="••••" maxlength="10" autocomplete="off">
+      <div id="auth-error" class="auth-error">Mot de passe incorrect. Réessayez.</div>
+      <button id="btn-login" class="btn-auth">Déverrouiller</button>
     </div>
+  </div>
 
-    <!-- Sub-zone de Réinitialisation Globale -->
-    <div class="danger-zone-sidebar">
-      <p style="font-size: 0.75rem; color: #888; margin-bottom: 10px;">ZONE DE DANGER</p>
-      <button id="btn-global-reset" class="btn-reset-global">
-        ⚠️ Reset Général
-      </button>
-    </div>
-  </aside>
-
-  <!-- Zone de contenu principal -->
-  <main class="admin-content">
-    <header class="admin-header">
+  <!-- Conteneur protégé regroupant le Sidebar et le Contenu Principal -->
+  <div id="protected-container" class="protected-container">
+    
+    <!-- Barre latérale / Dashboard à gauche -->
+    <aside class="admin-sidebar">
       <div>
-        <a href="index.html" class="btn-back">← Retour au sondage</a>
-        <h1 style="margin: 10px 0 0 0;">Tableau de bord des Votes</h1>
-      </div>
-      <div id="last-update" style="font-size: 0.85rem; color: #888;">Direct Firestore Active</div>
-    </header>
+        <a href="index.html" class="sidebar-brand">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="#d32f2f">
+            <circle cx="12" cy="12" r="10" stroke="#d32f2f" stroke-width="2" fill="none"/>
+            <path d="M12 2a10 10 0 0 0-10 10h10V2z" fill="#d32f2f"/>
+          </svg>
+          <span>MDB ADMIN</span>
+        </a>
 
-    <!-- Métriques Clés -->
-    <section class="metrics-grid">
-      <div class="metric-card">
-        <h4>Total des Votes</h4>
-        <div class="value" id="metric-total-votes">0</div>
+        <ul class="sidebar-menu">
+          <li><a href="#" class="active">📊 Dashboard</a></li>
+          <!-- Bouton pour accéder aux suggestions de thèmes -->
+          <li><a href="chat.html">💬 Propositions de thèmes</a></li>
+          <li><a href="index.html" target="_blank">🌐 Voir le site public ↗</a></li>
+        </ul>
       </div>
-      <div class="metric-card">
-        <h4>Thème Gagnant</h4>
-        <div class="value" id="metric-leading-theme" style="color: #4caf50;">-</div>
-      </div>
-      <div class="metric-card">
-        <h4>Taux de Participation</h4>
-        <div class="value" id="metric-total-voters">0 v. uniques</div>
-      </div>
-    </section>
 
-    <!-- Tableau du Classement des Thèmes -->
-    <section class="dashboard-section">
-      <h2>🏆 Classement en Temps Réel</h2>
-      <table class="leaderboard-table">
-        <thead>
-          <tr>
-            <th>Rang</th>
-            <th>Thème</th>
-            <th>Votes</th>
-            <th>Pourcentage</th>
-            <th>Statut</th>
-          </tr>
-        </thead>
-        <tbody id="leaderboard-body">
-          <!-- Chargé dynamiquement -->
-        </tbody>
-      </table>
-    </section>
-  </main>
+      <!-- Sub-zone de Réinitialisation Globale -->
+      <div class="danger-zone-sidebar">
+        <p style="font-size: 0.75rem; color: #888; margin-bottom: 10px;">ZONE DE DANGER</p>
+        <button id="btn-global-reset" class="btn-reset-global">
+          ⚠️ Reset Général
+        </button>
+      </div>
+    </aside>
+
+    <!-- Zone de contenu principal -->
+    <main class="admin-content">
+      <header class="admin-header">
+        <div>
+          <a href="index.html" class="btn-back">← Retour au sondage</a>
+          <h1 style="margin: 10px 0 0 0;">Tableau de bord des Votes</h1>
+        </div>
+        <div id="last-update" style="font-size: 0.85rem; color: #888;">Direct Firestore Active</div>
+      </header>
+
+      <!-- Métriques Clés -->
+      <section class="metrics-grid">
+        <div class="metric-card">
+          <h4>Total des Votes</h4>
+          <div class="value" id="metric-total-votes">0</div>
+        </div>
+        <div class="metric-card">
+          <h4>Thème Gagnant</h4>
+          <div class="value" id="metric-leading-theme" style="color: #4caf50;">-</div>
+        </div>
+        <div class="metric-card">
+          <h4>Taux de Participation</h4>
+          <div class="value" id="metric-total-voters">0 v. uniques</div>
+        </div>
+      </section>
+
+      <!-- Tableau du Classement des Thèmes -->
+      <section class="dashboard-section">
+        <h2>🏆 Classement en Temps Réel</h2>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Rang</th>
+              <th>Thème</th>
+              <th>Votes</th>
+              <th>Pourcentage</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <!-- Chargé dynamiquement -->
+          </tbody>
+        </table>
+      </section>
+    </main>
+
+  </div>
+
+  <script>
+    // Gestion du Mot de Passe d'Accès
+    const authOverlay = document.getElementById("auth-overlay");
+    const protectedContainer = document.getElementById("protected-container");
+    const accessPass = document.getElementById("access-pass");
+    const btnLogin = document.getElementById("btn-login");
+    const authError = document.getElementById("auth-error");
+
+    function checkPassword() {
+      if (accessPass.value === "1357") {
+        authOverlay.style.display = "none";
+        protectedContainer.classList.add("unlocked");
+      } else {
+        authError.style.display = "block";
+        accessPass.value = "";
+        accessPass.focus();
+      }
+    }
+
+    btnLogin.addEventListener("click", checkPassword);
+    accessPass.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") checkPassword();
+    });
+  </script>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
