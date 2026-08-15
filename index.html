@@ -56,14 +56,13 @@
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyDbDMR-oyeJwNNL6TSIMfO8YTIjijvxays",
-      authDomain: "coupdemain-2f67c.firebaseapp.com",
-      databaseURL: "https://coupdemain-2f67c-default-rtdb.firebaseio.com",
-      projectId: "coupdemain-2f67c",
-      storageBucket: "coupdemain-2f67c.firebasestorage.app",
-      messagingSenderId: "125578826567",
-      appId: "1:125578826567:web:f74a319d0544f4ef2cf262",
-      measurementId: "G-B5FCY22Y03"
+      apiKey: "AIzaSyCmXI-KkGijfe8Dhk0P134qhZtfDJdkSo0",
+      authDomain: "coupdemain-adf04.firebaseapp.com",
+      projectId: "coupdemain-adf04",
+      storageBucket: "coupdemain-adf04.firebasestorage.app",
+      messagingSenderId: "475200128300",
+      appId: "1:475200128300:web:491fc694377b2ff7f71889",
+      measurementId: "G-FJRW0DTWY7"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -81,6 +80,8 @@
 
     const visitorId = getVisitorId();
     let currentVotedThemeId = null;
+    let cachedThemesData = [];
+    let cachedTotalVotes = 0;
 
     // SVG associés aux IDs
     const emotionIcons = {
@@ -103,20 +104,23 @@
       } else {
         currentVotedThemeId = null;
       }
+      if (cachedThemesData.length > 0) {
+        renderCards(cachedThemesData, cachedTotalVotes);
+      }
     });
 
     // 3. Écoute dynamique directe depuis Firestore
     onSnapshot(collection(db, "themes"), (snapshot) => {
-      let totalVotes = 0;
-      const themesData = [];
+      cachedTotalVotes = 0;
+      cachedThemesData = [];
 
       snapshot.forEach(docSnap => {
         const data = docSnap.data();
-        totalVotes += (data.votes || 0);
-        themesData.push({ id: docSnap.id, ...data });
+        cachedTotalVotes += (data.votes || 0);
+        cachedThemesData.push({ id: docSnap.id, ...data });
       });
 
-      renderCards(themesData, totalVotes);
+      renderCards(cachedThemesData, cachedTotalVotes);
     });
 
     function renderCards(themes, totalVotes) {
@@ -138,8 +142,8 @@
             <div class="card-header">
               ${iconSvg}
               <div class="card-title">
-                <h3>${theme.name}</h3>
-                <p>${theme.desc}</p>
+                <h3>${theme.name || theme.id}</h3>
+                <p>${theme.desc || ''}</p>
               </div>
             </div>
           </div>
