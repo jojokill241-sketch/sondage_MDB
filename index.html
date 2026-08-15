@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MDB.PROD - Sondage de Contenu</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <div class="header-title-box">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="#d32f2f">
+        <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+      </svg>
+      <span>VOTE POUR LE PROCHAIN CONTENU</span>
+    </div>
+    
+    <a href="mdb.html" class="logo-mdb-link" title="Aller sur la page MDB.PROD">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="#d32f2f">
+        <circle cx="12" cy="12" r="10" stroke="#d32f2f" stroke-width="2" fill="none"/>
+        <path d="M12 2a10 10 0 0 0-10 10h10V2z" fill="#d32f2f"/>
+      </svg>
+      <span>MDB.PROD</span>
+    </a>
+  </header>
+
+  <section class="hero">
+    <h1>AIDEZ-MOI À CHOISIR LE SUJET DE LA SEMAINE !</h1>
+    <p>Le thème avec le plus de votes sera le sujet de ma prochaine publication.</p>
+    <div class="timer-badge">Fin des votes dans : 2 jours 14 heures</div>
+  </section>
+
+  <!-- Zone du bouton de réinitialisation si déjà voté -->
+  <div id="reset-zone" class="reset-container" style="display: none;">
+    <button id="btn-reset-vote" class="btn-reset">🔄 Modifier mon vote</button>
+  </div>
+
+  <main class="grid-container" id="themes-container">
+    <!-- Chargement dynamique -->
+  </main>
+
+  <section class="idea-section">
+    <a href="chat.html" class="btn-idea">Une autre idée ? Proposez un thème !</a>
+  </section>
+
+  <footer>
+    <div class="chef-prod">chef prod : N.Sunray</div>
+    <div>Hébergé sur Firebase & GitHub Pages</div>
+  </footer>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { 
+      getFirestore, doc, setDoc, getDoc, deleteDoc, onSnapshot, updateDoc, increment, collection, getDocs, serverTimestamp 
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDbDMR-oyeJwNNL6TSIMfO8YTIjijvxays",
+      authDomain: "coupdemain-2f67c.firebaseapp.com",
+      databaseURL: "https://coupdemain-2f67c-default-rtdb.firebaseio.com",
+      projectId: "coupdemain-2f67c",
+      storageBucket: "coupdemain-2f67c.firebasestorage.app",
+      messagingSenderId: "125578826567",
+      appId: "1:125578826567:web:f74a319d0544f4ef2cf262",
+      measurementId: "G-B5FCY22Y03"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // 1. Génération / Récupération de l'ID Visiteur unique
+    function getVisitorId() {
+      let id = localStorage.getItem("mdb_visitor_id");
+      if (!id) {
+        id = "visitor_" + Math.random().toString(36).substring(2, 11) + "_" + Date.now();
+        localStorage.setItem("mdb_visitor_id", id);
+      }
+      return id;
+    }
+
+    const visitorId = getVisitorId();
+    let currentVotedThemeId = null; // Stockera l'ID du thème voté selon Firestore
+
+    const emotionIcons = {
+      tristesse: '<svg class="card-icon" viewBox="0 0 24 24"><path d="M12 3a9 9 0 0 0-9 9c0 4.97 4.03 9 9 9s9-4.03 9-9a9 9 0 0 0-9-9zm0 16c-3.86 0-7-3.14-7-7 0-3.86 3.14-7 7-7s7 3.14 7 7c0 3.86-3.14 7-7 7zm-3-8a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm6 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm-6 5c.83-.67 2-1 3-1s2.17.33 3 1"/></svg>',
+      joie: '<svg class="card-icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm0 18a8 8 0 1 1 8-8 8 8 0 0 1-8 8zm-3.5-9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm7 0a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3zm-7.5 3a5 5 0 0 0 8 0"/></svg>',
+      colere: '<svg class="card-icon" viewBox="0 0 24 24"><path d="M7 2v11h3v9l7-12h-4l4-8z"/></svg>',
+      calme: '<svg class="card-icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-10 10h20a10 10 0 0 0-10-10zm-6 8a6 6 0 0 1 12 0z"/></svg>',
+      confusion: '<svg class="card-icon" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 14h-2v-2h2zm1.07-7.75l-.9.92C12.45 9.9 12 10.5 12 12h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41a2 2 0 0 0-4 0H7a4 4 0 1 1 8 0c0 .88-.36 1.68-.93 2.25z"/></svg>',
+      enthousiasme: '<svg class="card-icon" viewBox="0 0 24 24"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61z"/></svg>'
+    };
+
+    const initialThemes = [
+      { id: "tristesse", name: "TRISTESTE", desc: "Mélancolie et introspection" },
+      { id: "joie", name: "JOIE", desc: "Énergie positive et célébration" },
+      { id: "colere", name: "COLÈRE", desc: "Émotions brutes et révolte" },
+      { id: "calme", name: "CALME", desc: "Sérénité et paix intérieure" },
+      { id: "confusion", name: "CONFUSION", desc: "Doutes et complexité" },
+      { id: "enthousiasme", name: "ENTHOUSIASME", desc: "Passion et nouveaux départs" }
+    ];
+
+    const themesContainer = document.getElementById("themes-container");
+    const resetZone = document.getElementById("reset-zone");
+    const btnReset = document.getElementById("btn-reset-vote");
+
+    // 2. Initialisation Firestore
+    async function initDB() {
+      const snap = await getDocs(collection(db, "themes"));
+      if (snap.empty) {
+        for (const t of initialThemes) {
+          await setDoc(doc(db, "themes", t.id), { name: t.name, desc: t.desc, votes: 0 });
+        }
+      }
+    }
+    initDB();
+
+    // 3. Écoute du vote du visiteur actuel
+    onSnapshot(doc(db, "user_votes", visitorId), (docSnap) => {
+      if (docSnap.exists()) {
+        currentVotedThemeId = docSnap.data().votedTheme;
+      } else {
+        currentVotedThemeId = null;
+      }
+    });
+
+    // 4. Écoute dynamique des thèmes & recalcul des pourcentages
+    onSnapshot(collection(db, "themes"), (snapshot) => {
+      let totalVotes = 0;
+      const themesData = [];
+
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        totalVotes += (data.votes || 0);
+        themesData.push({ id: docSnap.id, ...data });
+      });
+
+      renderCards(themesData, totalVotes);
+    });
+
+    function renderCards(themes, totalVotes) {
+      const hasVoted = currentVotedThemeId !== null;
+
+      resetZone.style.display = hasVoted ? "block" : "none";
+      themesContainer.innerHTML = "";
+
+      themes.forEach(theme => {
+        const votes = theme.votes || 0;
+        const percentage = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+        const iconSvg = emotionIcons[theme.id] || emotionIcons.joie;
+        const isSelected = currentVotedThemeId === theme.id;
+
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <div>
+            <div class="card-header">
+              ${iconSvg}
+              <div class="card-title">
+                <h3>${theme.name}</h3>
+                <p>${theme.desc}</p>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div class="vote-info">
+              <button class="btn-vote" ${hasVoted ? 'disabled' : ''} data-id="${theme.id}">
+                ${isSelected ? '✔ VOTÉ' : 'VOTER'}
+              </button>
+              <div>
+                <strong>${votes} votes</strong> (${percentage}%)
+              </div>
+            </div>
+            <div class="progress-bg">
+              <div class="progress-bar" style="width: ${percentage}%"></div>
+            </div>
+          </div>
+        `;
+
+        const btn = card.querySelector(".btn-vote");
+        if (!hasVoted) {
+          btn.addEventListener("click", () => handleVote(theme.id));
+        }
+
+        themesContainer.appendChild(card);
+      });
+    }
+
+    // 5. Action de vote
+    async function handleVote(themeId) {
+      try {
+        // Enregistrer le vote dans user_votes
+        await setDoc(doc(db, "user_votes", visitorId), {
+          votedTheme: themeId,
+          timestamp: serverTimestamp()
+        });
+
+        // Incrémenter le total du thème
+        const themeRef = doc(db, "themes", themeId);
+        await updateDoc(themeRef, { votes: increment(1) });
+      } catch (e) {
+        console.error("Erreur lors du vote:", e);
+      }
+    }
+
+    // 6. Action d'annulation/modification du vote
+    btnReset.addEventListener("click", async () => {
+      if (!currentVotedThemeId) return;
+
+      try {
+        const oldThemeId = currentVotedThemeId;
+
+        // Supprimer le vote du visiteur
+        await deleteDoc(doc(db, "user_votes", visitorId));
+
+        // Décrémenter le thème dans Firestore
+        const themeRef = doc(db, "themes", oldThemeId);
+        await updateDoc(themeRef, { votes: increment(-1) });
+      } catch (e) {
+        console.error("Erreur lors de la réinitialisation :", e);
+      }
+    });
+  </script>
+</body>
+</html>
